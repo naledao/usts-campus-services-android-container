@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 只对白名单 IP 允许明文 HTTP -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 你的服务器 IP -->
+        <domain includeSubdomains="false">10.160.63.9</domain>
+
+        <!-- 如果你在模拟器里通过宿主机转发访问，也放开 10.0.2.2（可选） -->
+        <!-- <domain includeSubdomains="false">10.0.2.2</domain> -->
+    </domain-config>
+</network-security-config>

@@ -16,6 +16,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenLocal()
+        // Custom local Maven repository path (provided by user)
+        maven {
+            url = uri('C:/apache-maven-3.8.9/re')
+        }
         mavenCentral()
     }
 }
