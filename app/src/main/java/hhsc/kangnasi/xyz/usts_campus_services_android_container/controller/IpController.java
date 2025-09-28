@@ -5,18 +5,13 @@ import android.util.Log;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
-import java.io.IOException;
 import java.net.InetAddress;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import hhsc.kangnasi.xyz.simplespringmvc.api.mvc.annotations.GetMapping;
 import hhsc.kangnasi.xyz.simplespringmvc.api.mvc.annotations.RequestMapping;
 import hhsc.kangnasi.xyz.simplespringmvc.api.mvc.annotations.RestController;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 @RequestMapping("/ip")
 @RestController

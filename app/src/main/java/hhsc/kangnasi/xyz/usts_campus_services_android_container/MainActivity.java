@@ -53,7 +53,7 @@ public class MainActivity extends ApiServerActivity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         webView.setWebViewClient(new WebViewClient());
         webView.addJavascriptInterface(new JsBridge(this), "AndroidApi");
-        webView.loadUrl("file:///android_asset/api_tester/index.html");
+        webView.loadUrl("file:///android_asset/index.html");
     }
 
     @Override
