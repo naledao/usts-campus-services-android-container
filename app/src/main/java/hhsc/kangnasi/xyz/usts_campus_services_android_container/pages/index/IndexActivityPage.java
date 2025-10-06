@@ -11,11 +11,15 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.core.content.FileProvider;
@@ -49,6 +53,10 @@ public class IndexActivityPage extends ApiServerActivity {
     private static final String APK_DOWNLOAD_URL = "http://hhsc.kangnasi.xyz/usts.apk"; // 固定的APK下载直链
     private static final int REQ_UNKNOWN_APP_SOURCES = 1001;
     private File pendingApkFile = null;
+    private AlertDialog downloadDialog = null;
+    private ProgressBar downloadProgressBar = null;
+    private TextView downloadProgressText = null;
+    private volatile boolean isDownloading = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -162,6 +170,8 @@ public class IndexActivityPage extends ApiServerActivity {
                 Log.e("Update", "check failed", e);
             } finally {
                 if (conn != null) conn.disconnect();
+                isDownloading = false;
+                runOnUiThread(this::dismissDownloadProgressDialog);
             }
         }).start();
     }
@@ -183,6 +193,8 @@ public class IndexActivityPage extends ApiServerActivity {
         new Thread(() -> {
             HttpURLConnection conn = null;
             File outFile = null;
+            runOnUiThread(this::showDownloadProgressDialog);
+            isDownloading = true;
             try {
                 URL url = new URL(apkUrl);
                 conn = (HttpURLConnection) url.openConnection();
@@ -196,13 +208,28 @@ public class IndexActivityPage extends ApiServerActivity {
                 if (dir == null) dir = getFilesDir();
                 if (!dir.exists()) dir.mkdirs();
                 outFile = new File(dir, "update.apk");
-
+                
+                final long totalBytes = conn.getContentLengthLong();
                 try (InputStream is = new BufferedInputStream(conn.getInputStream());
                      FileOutputStream fos = new FileOutputStream(outFile)) {
                     byte[] buf = new byte[8 * 1024];
                     int len;
+                    long downloaded = 0L;
+                    int lastPercent = -1;
                     while ((len = is.read(buf)) != -1) {
                         fos.write(buf, 0, len);
+                        downloaded += len;
+                        if (totalBytes > 0) {
+                            int percent = (int) (downloaded * 100 / totalBytes);
+                            if (percent != lastPercent) {
+                                lastPercent = percent;
+                                long finalDownloaded = downloaded;
+                                runOnUiThread(() -> updateDownloadProgress(finalDownloaded, totalBytes));
+                            }
+                        } else {
+                            long finalDownloaded = downloaded;
+                            runOnUiThread(() -> updateDownloadProgress(finalDownloaded, -1));
+                        }
                     }
                     fos.flush();
                 }
@@ -267,6 +294,56 @@ public class IndexActivityPage extends ApiServerActivity {
             installApk(pendingApkFile);
             pendingApkFile = null;
         }
+    }
+
+    private void showDownloadProgressDialog() {
+        if (downloadDialog != null && downloadDialog.isShowing()) return;
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_download_progress, null, false);
+        downloadProgressBar = view.findViewById(R.id.progress_bar);
+        downloadProgressText = view.findViewById(R.id.progress_text);
+        if (downloadProgressBar != null) {
+            downloadProgressBar.setIndeterminate(true);
+            downloadProgressBar.setMax(100);
+        }
+        if (downloadProgressText != null) downloadProgressText.setText("正在准备下载...");
+        downloadDialog = new AlertDialog.Builder(this)
+                .setTitle("正在下载更新")
+                .setView(view)
+                .setCancelable(false)
+                .create();
+        downloadDialog.show();
+    }
+
+    private void updateDownloadProgress(long downloaded, long total) {
+        if (downloadProgressBar == null || downloadProgressText == null) return;
+        if (total > 0) {
+            int percent = (int) (downloaded * 100 / total);
+            downloadProgressBar.setIndeterminate(false);
+            downloadProgressBar.setProgress(percent);
+            String text = String.format("已下载 %d%%", percent);
+            downloadProgressText.setText(text);
+        } else {
+            downloadProgressBar.setIndeterminate(true);
+            downloadProgressText.setText("正在下载...");
+        }
+    }
+
+    private void dismissDownloadProgressDialog() {
+        if (downloadDialog != null && downloadDialog.isShowing()) {
+            downloadDialog.dismiss();
+        }
+        downloadDialog = null;
+        downloadProgressBar = null;
+        downloadProgressText = null;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isDownloading) {
+            Toast.makeText(this, "正在下载，请稍候…", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        super.onBackPressed();
     }
 
     private long getLocalVersionCode() {
