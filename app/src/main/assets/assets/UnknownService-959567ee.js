@@ -1,1 +1,0 @@
-import{_ as n,r as t,o as r,c as a,d as s,w as c,a as l}from"./index-f76ea637.js";const _={};function d(p,e){const o=t("van-cell-group");return r(),a("div",null,[s(o,{inset:""},{default:c(()=>[...e[0]||(e[0]=[l("div",{style:{padding:"16px",color:"#666"}},"该服务的创建表单暂未实现，请稍后再试。",-1)])]),_:1})])}const f=n(_,[["render",d]]);export{f as default};
