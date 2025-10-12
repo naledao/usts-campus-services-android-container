@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.MotionEvent;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -58,6 +59,7 @@ public class IndexActivityPage extends ApiServerActivity {
     private ProgressBar downloadProgressBar = null;
     private TextView downloadProgressText = null;
     private volatile boolean isDownloading = false;
+    private WebView webView;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -78,7 +80,7 @@ public class IndexActivityPage extends ApiServerActivity {
 
 
         // Setup WebView and load tester page
-        WebView webView = findViewById(R.id.webview);
+        webView = findViewById(R.id.webview);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -348,8 +350,19 @@ public class IndexActivityPage extends ApiServerActivity {
     @Override
     public void onBackPressed() {
         if (isDownloading) {
-            Toast.makeText(this, "正在下载，请稍候…", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "正在下载，请稍候...", Toast.LENGTH_SHORT).show();
             return;
+        }
+        if (webView != null) {
+            WebBackForwardList history = webView.copyBackForwardList();
+            if (history != null && history.getCurrentIndex() > 0) {
+                webView.goBack();
+                return;
+            }
+            if (webView.canGoBack()) {
+                webView.goBack();
+                return;
+            }
         }
         super.onBackPressed();
     }

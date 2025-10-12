@@ -1,1 +1,0 @@
-import{j as r}from"./index-17b9c811.js";var t,o;const a=((o=(t=window.AndroidApi)==null?void 0:t.getPort)==null?void 0:o.call(t))??"10089",e=r.create({baseURL:"http://127.0.0.1:"+a});class c{static getCampusIp(){return e.get("/ip/get")}}export{c as L};
