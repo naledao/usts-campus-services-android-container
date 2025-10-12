@@ -13,6 +13,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.MotionEvent;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -88,7 +89,14 @@ public class IndexActivityPage extends ApiServerActivity {
         settings.setAllowFileAccess(true);
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
         webView.addJavascriptInterface(new JsBridge(this), "AndroidApi");
+        webView.setOnLongClickListener(v -> true);
+        webView.setLongClickable(false);
+        webView.setHapticFeedbackEnabled(false);
+        webView.setOnTouchListener((v, event) -> event.getPointerCount() > 1);
         // 设置 WebViewClient 拦截跳转/加载
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient());
