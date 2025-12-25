@@ -13,6 +13,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
@@ -56,8 +57,10 @@ public class IndexActivityPage extends ApiServerActivity {
     private static final int REQ_UNKNOWN_APP_SOURCES = 1001;
     private File pendingApkFile = null;
     private AlertDialog downloadDialog = null;
+    private AlertDialog updateDialog = null;
     private ProgressBar downloadProgressBar = null;
     private TextView downloadProgressText = null;
+    private volatile boolean updateRequired = false;
     private volatile boolean isDownloading = false;
     private WebView webView;
 
@@ -98,7 +101,7 @@ public class IndexActivityPage extends ApiServerActivity {
         webView.setOnLongClickListener(v -> true);
         webView.setLongClickable(false);
         webView.setHapticFeedbackEnabled(false);
-        webView.setOnTouchListener((v, event) -> event.getPointerCount() > 1);
+        webView.setOnTouchListener((v, event) -> updateRequired || event.getPointerCount() > 1);
         // 设置 WebViewClient 拦截跳转/加载
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient());
@@ -187,15 +190,23 @@ public class IndexActivityPage extends ApiServerActivity {
     }
 
     private void promptUpdate(String latestName, long latestCode, String apkUrl) {
+        updateRequired = true;
         String msg = (latestName == null || latestName.isEmpty()) ?
                 ("发现新版本(" + latestCode + ")，是否更新？") :
                 ("发现新版本 " + latestName + "，是否更新？");
-        new AlertDialog.Builder(this)
+        if (updateDialog != null && updateDialog.isShowing()) {
+            updateDialog.dismiss();
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle("应用更新")
                 .setMessage(msg)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("更新", (d, w) -> downloadAndInstallApk(apkUrl))
-                .show();
+                .setCancelable(false)
+                .setPositiveButton("更新", (dialog, which) -> downloadAndInstallApk(apkUrl));
+        updateDialog = builder.create();
+        updateDialog.setCanceledOnTouchOutside(false);
+        updateDialog.setOnKeyListener((dialog, keyCode, event) -> keyCode == KeyEvent.KEYCODE_BACK);
+        updateDialog.setOnDismissListener(dialog -> updateDialog = null);
+        updateDialog.show();
     }
 
     private void downloadAndInstallApk(String apkUrl) {
@@ -351,6 +362,10 @@ public class IndexActivityPage extends ApiServerActivity {
     public void onBackPressed() {
         if (isDownloading) {
             Toast.makeText(this, "正在下载，请稍候...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (updateRequired) {
+            Toast.makeText(this, "请先更新至最新版本", Toast.LENGTH_SHORT).show();
             return;
         }
         if (webView != null) {
